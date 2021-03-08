@@ -2,10 +2,18 @@ const express = require("express");
 const expressWs = require("express-ws");
 const pty = require("node-pty");
 const os = require("os");
-const { exec } = require('child_process');
+const { exec } = require("child_process");
 
 // Whether to use binary transport.
 const USE_BINARY = os.platform() !== "win32";
+
+// Configurations
+const dockerRun = process.env.DOCKER_RUN || "false";
+const host = process.env.HOST || "0.0.0.0";
+const port = process.env.PORT || 3000;
+console.log("dockerRun = " + dockerRun);
+console.log("host = " + host);
+console.log("port = " + port);
 
 function startServer() {
   var app = express();
@@ -18,6 +26,7 @@ function startServer() {
   // ROUTES
   // static files
   app.use("/xterm.css", express.static(__dirname + "/client/xterm.css"));
+  app.use("/favicon.ico", express.static(__dirname + "/client/favicon.ico"));
   app.get("/", (req, res) => {
     res.sendFile(__dirname + "/client/index.html");
   });
@@ -33,8 +42,10 @@ function startServer() {
     const env = Object.assign({}, process.env);
     var cols = parseInt(req.query.cols),
       rows = parseInt(req.query.rows),
-      name = Math.random().toString(36).substring(7),
-      opts = [
+      name = Math.random().toString(36).substring(7);
+    var term;
+    if (dockerRun === "true") {
+      var opts = [
         "run",
         "-it",
         "--rm",
@@ -51,7 +62,7 @@ function startServer() {
         "--cpus=.5",
         "hseeberger/scala-sbt:8u222_1.3.5_2.13.1",
         "scala",
-      ],
+      ];
       term = pty.spawn("docker", opts, {
         name: "xterm-256color",
         cols: cols || 80,
@@ -60,6 +71,16 @@ function startServer() {
         env: env,
         encoding: USE_BINARY ? null : "utf8",
       });
+    } else {
+      term = pty.spawn("scala", [], {
+        name: "xterm-256color",
+        cols: cols || 80,
+        rows: rows || 24,
+        cwd: process.platform === "win32" ? undefined : env.PWD,
+        env: env,
+        encoding: USE_BINARY ? null : "utf8",
+      });
+    }
     console.log(
       "Created terminal with PID: " + term.pid + " with name " + name
     );
@@ -159,8 +180,6 @@ function startServer() {
   });
 
   // start server
-  const port = process.env.PORT || 3000;
-  const host = process.env.HOST || "0.0.0.0";
   console.log("Server is running on http://" + host + ":" + port);
   app.listen(port, host);
 }
