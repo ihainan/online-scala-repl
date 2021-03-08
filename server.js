@@ -2,7 +2,7 @@ const express = require("express");
 const expressWs = require("express-ws");
 const pty = require("node-pty");
 const os = require("os");
-const exec = require("child_process");
+const { exec } = require('child_process');
 
 // Whether to use binary transport.
 const USE_BINARY = os.platform() !== "win32";
@@ -142,6 +142,7 @@ function startServer() {
       exec("docker kill " + name, (err, stdout, stderr) => {
         if (err) {
           console.log("Failed to kill docker container " + name);
+          console.log(stderr);
         }
       });
 
