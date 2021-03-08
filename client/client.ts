@@ -4,8 +4,12 @@ import { AttachAddon } from "xterm-addon-attach";
 
 // Terminals
 let term;
-let protocol;
-let socketURL;
+let protocol = location.protocol === "https:" ? "wss://" : "ws://";
+let socketURL =
+  protocol +
+  location.hostname +
+  (location.port ? ":" + location.port : "") +
+  "/terminals/";
 let pid;
 let socket;
 
@@ -27,15 +31,8 @@ function createTerminal(): void {
     cursorBlink: true,
     disableStdin: false,
   });
-  protocol = location.protocol === "https:" ? "wss://" : "ws://";
-  socketURL =
-    protocol +
-    location.hostname +
-    (location.port ? ":" + location.port : "") +
-    "/terminals/";
   console.log("socketURL = " + socketURL);
   term.onResize((size: { cols: number; rows: number }) => {
-    console.log("Resize to " + size.cols + " and " + size.rows);
     if (!pid) {
       return;
     }
@@ -43,7 +40,6 @@ function createTerminal(): void {
     const rows = size.rows;
     const url = "/terminals/" + pid + "/size?cols=" + cols + "&rows=" + rows;
     fetch(url, { method: "POST" });
-    console.log("Resized to " + size.cols + " and " + size.rows);
   });
 
   // Addons
@@ -54,12 +50,24 @@ function createTerminal(): void {
   // Open Terminal
   term.open(terminalContainer);
   term.writeln("");
-  term.writeln("░██████╗░█████╗░░█████╗░██╗░░░░░░█████╗░  ██████╗░███████╗██████╗░██╗░░░░░");
-  term.writeln("██╔════╝██╔══██╗██╔══██╗██║░░░░░██╔══██╗  ██╔══██╗██╔════╝██╔══██╗██║░░░░░");
-  term.writeln("╚█████╗░██║░░╚═╝███████║██║░░░░░███████║  ██████╔╝█████╗░░██████╔╝██║░░░░░");
-  term.writeln("░╚═══██╗██║░░██╗██╔══██║██║░░░░░██╔══██║  ██╔══██╗██╔══╝░░██╔═══╝░██║░░░░░");
-  term.writeln("██████╔╝╚█████╔╝██║░░██║███████╗██║░░██║  ██║░░██║███████╗██║░░░░░███████╗");
-  term.writeln("╚═════╝░░╚════╝░╚═╝░░╚═╝╚══════╝╚═╝░░╚═╝  ╚═╝░░╚═╝╚══════╝╚═╝░░░░░╚══════╝");
+  term.writeln(
+    "░██████╗░█████╗░░█████╗░██╗░░░░░░█████╗░  ██████╗░███████╗██████╗░██╗░░░░░"
+  );
+  term.writeln(
+    "██╔════╝██╔══██╗██╔══██╗██║░░░░░██╔══██╗  ██╔══██╗██╔════╝██╔══██╗██║░░░░░"
+  );
+  term.writeln(
+    "╚█████╗░██║░░╚═╝███████║██║░░░░░███████║  ██████╔╝█████╗░░██████╔╝██║░░░░░"
+  );
+  term.writeln(
+    "░╚═══██╗██║░░██╗██╔══██║██║░░░░░██╔══██║  ██╔══██╗██╔══╝░░██╔═══╝░██║░░░░░"
+  );
+  term.writeln(
+    "██████╔╝╚█████╔╝██║░░██║███████╗██║░░██║  ██║░░██║███████╗██║░░░░░███████╗"
+  );
+  term.writeln(
+    "╚═════╝░░╚════╝░╚═╝░░╚═╝╚══════╝╚═╝░░╚═╝  ╚═╝░░╚═╝╚══════╝╚═╝░░░░░╚══════╝"
+  );
   term.writeln("");
 
   // Change window size
@@ -77,15 +85,22 @@ function createTerminal(): void {
     method: "POST",
   }).then((res) => {
     res.text().then((processId) => {
-      pid = processId;
-      socketURL += processId;
-      socket = new WebSocket(socketURL);
-      socket.onopen = runRealTerminal;
-      socket.onclose = runFakeTerminal;
-      socket.onerror = runFakeTerminal;
-      console.log(term.cols);
-      console.log(term.rows);
-      term.focus();
+      if (processId === "-1") {
+        term.write(
+          ">>>> Oops, we can't allocate system resource to you for the moment."
+        );
+        term.setOption("disableStdin", true);
+      } else {
+        pid = processId;
+        socketURL += processId;
+        socket = new WebSocket(socketURL);
+        socket.onopen = runRealTerminal;
+        socket.onclose = runFakeTerminal;
+        socket.onerror = runFakeTerminal;
+        console.log(term.cols);
+        console.log(term.rows);
+        term.focus();
+      }
     });
   });
 }
