@@ -1,0 +1,11 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "target": "es2015",
+    "rootDir": ".",
+    "sourceMap": true,
+    "baseUrl": ".",
+    "outDir": "./dist/"
+  },
+  "include": ["client/client.ts"]
+}

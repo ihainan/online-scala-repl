@@ -1,0 +1,30 @@
+<html>
+  <head>
+    <title>Online Scala REPL</title>
+    <link rel="stylesheet" href="/xterm.css" />
+    <style>
+      body {
+        height: 100%;
+        width: 100%;
+        margin: 0;
+      }
+
+      #terminal-container {
+        height: 100%;
+        width: 100vh - 20px;
+        background-color: black;
+        padding: 10px;
+      }
+
+      .xterm-viewport {
+        overflow: hidden !important;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="fullscreen">
+      <div id="terminal-container"></div>
+    </div>
+    <script src="/client-bundle.js" defer></script>
+  </body>
+</html>

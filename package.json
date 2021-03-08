@@ -1,0 +1,41 @@
+{
+  "name": "scala-repl",
+  "version": "1.0.0",
+  "description": "Online Scala REPL",
+  "main": "server.js",
+  "scripts": {
+    "clean": "rimraf dist",
+    "build": "webpack",
+    "dev": "nodemon ./server.js localhost 3080",
+    "wp": "webpack",
+    "wpw": "webpack --watch"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ihainan/online-scala-repl.git"
+  },
+  "author": "ihainan",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/ihainan/online-scala-repl/issues"
+  },
+  "homepage": "https://github.com/ihainan/online-scala-repl#readme",
+  "dependencies": {
+    "express": "^4.17.1",
+    "express-ws": "^4.0.0",
+    "file-uri-to-path": "^2.0.0",
+    "node-pty": "^0.10.0",
+    "screenres": "^2.0.1",
+    "xterm": "^4.10.0",
+    "xterm-addon-attach": "^0.6.0",
+    "xterm-addon-fit": "^0.5.0",
+    "xterm-addon-serialize": "^0.4.0"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.7",
+    "ts-loader": "^8.0.17",
+    "typescript": "^4.2.3",
+    "webpack": "^5.24.3",
+    "webpack-cli": "^4.5.0"
+  }
+}
