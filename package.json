@@ -25,7 +25,6 @@
     "express-ws": "^4.0.0",
     "file-uri-to-path": "^2.0.0",
     "node-pty": "^0.10.0",
-    "screenres": "^2.0.1",
     "xterm": "^4.10.0",
     "xterm-addon-attach": "^0.6.0",
     "xterm-addon-fit": "^0.5.0",

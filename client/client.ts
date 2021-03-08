@@ -8,8 +8,6 @@ let protocol;
 let socketURL;
 let pid;
 let socket;
-let rows;
-let cols;
 
 // Addons
 let attachAddon;
