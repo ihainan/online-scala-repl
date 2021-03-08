@@ -1,4 +1,4 @@
-# Web Scala REPL
+# Online Scala REPL
 
 ### Demo
 
@@ -21,4 +21,4 @@ npm run build
 node server.js # or DOCKER_RUN=true node server.js
 ```
 
-Then visit http://localhost:3000.
+Then visit http://localhost:3000 to use Scala REPL.
