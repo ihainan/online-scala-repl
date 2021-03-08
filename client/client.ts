@@ -31,7 +31,6 @@ function createTerminal(): void {
     cursorBlink: true,
     disableStdin: false,
   });
-  console.log("socketURL = " + socketURL);
   term.onResize((size: { cols: number; rows: number }) => {
     if (!pid) {
       return;
@@ -97,8 +96,6 @@ function createTerminal(): void {
         socket.onopen = runRealTerminal;
         socket.onclose = runFakeTerminal;
         socket.onerror = runFakeTerminal;
-        console.log(term.cols);
-        console.log(term.rows);
         term.focus();
       }
     });

@@ -12,10 +12,14 @@ const dockerRun = process.env.DOCKER_RUN || "false";
 const host = process.env.HOST || "0.0.0.0";
 const port = process.env.PORT || 3000;
 const maxTerminals = process.env.MAX_TERMINALS || 50;
-const maxIdleTime = 600000;
+const maxIdleTime = process.env.MAX_IDLE_TIME || 600000; // 10 minutes
+const clearIdleTimer = process.env.CLEAR_IDLE_TIMER || 3600000; // 1 hour
 console.log("dockerRun = " + dockerRun);
 console.log("host = " + host);
 console.log("port = " + port);
+console.log("maxTerminals = " + maxTerminals);
+console.log("maxIdleTime = " + maxIdleTime);
+console.log("clearIdleTimer = " + clearIdleTimer);
 
 var terminals = {},
   names = {},
@@ -26,8 +30,8 @@ function startServer() {
   var app = express();
   expressWs(app);
 
-  // ROUTES
-  // static files
+  /** ROUTES **/
+  // Static files
   app.use("/xterm.css", express.static(__dirname + "/client/xterm.css"));
   app.use("/favicon.ico", express.static(__dirname + "/client/favicon.ico"));
   app.get("/", (req, res) => {
@@ -38,10 +42,8 @@ function startServer() {
     express.static(__dirname + "/dist/client-bundle.js")
   );
 
-  // terminal APIs
+  // Terminal APIs
   app.post("/terminals", (req, res) => {
-    console.log("API: /terminals");
-
     // Clear idle terminals
     console.log(
       "Current resources: " +
@@ -49,16 +51,9 @@ function startServer() {
         " out of " +
         maxTerminals
     );
-    let currentTime = Date.now();
+
     if (Object.keys(terminals).length >= maxTerminals) {
-      for (let key in terminals) {
-        if (terminals.hasOwnProperty(key)) {
-          if (currentTime - lastUpdates[key] >= maxIdleTime) {
-            console.log("Clearing idle terminal " + key);
-            removeTerminal(terminals[key]);
-          }
-        }
-      }
+      removeIdleTerminals();
     }
 
     // No terminal was cleared
@@ -70,7 +65,7 @@ function startServer() {
       const env = Object.assign({}, process.env);
       var cols = parseInt(req.query.cols),
         rows = parseInt(req.query.rows),
-        name = Math.random().toString(36).substring(7);
+        name = makeId(20);
       var term;
       if (dockerRun === "true") {
         var opts = [
@@ -134,15 +129,6 @@ function startServer() {
       lastUpdates[term.pid] = Date.now();
       console.log("Resize to " + cols + ", " + rows);
       term.resize(cols, rows);
-      console.log(
-        "Resized terminal " +
-          pid +
-          " to " +
-          cols +
-          " cols and " +
-          rows +
-          " rows."
-      );
     }
     res.end();
   });
@@ -161,7 +147,7 @@ function startServer() {
           send(data);
         } catch (ex) {
           // The WebSocket is not open, ignore
-          console.log("The WebSocket is not open, ignore");
+          console.log("The WebSocket is not open, ignore it");
         }
       });
 
@@ -178,6 +164,17 @@ function startServer() {
   // start server
   console.log("Server is running on http://" + host + ":" + port);
   app.listen(port, host);
+}
+
+function makeId(length) {
+  var result = "";
+  var characters =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  var charactersLength = characters.length;
+  for (var i = 0; i < length; i++) {
+    result += characters.charAt(Math.floor(Math.random() * charactersLength));
+  }
+  return result;
 }
 
 // string message buffering
@@ -238,4 +235,19 @@ function removeTerminal(term) {
   }
 }
 
+function removeIdleTerminals() {
+  let currentTime = Date.now();
+  for (let key in terminals) {
+    if (terminals.hasOwnProperty(key)) {
+      if (currentTime - lastUpdates[key] >= maxIdleTime) {
+        console.log("Clearing idle terminal " + key);
+        removeTerminal(terminals[key]);
+      }
+    }
+  }
+
+  setTimeout(removeIdleTerminals, clearIdleTimer);
+}
+
+setTimeout(removeIdleTerminals, clearIdleTimer);
 startServer();
