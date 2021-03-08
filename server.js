@@ -2,6 +2,7 @@ const express = require("express");
 const expressWs = require("express-ws");
 const pty = require("node-pty");
 const os = require("os");
+const exec = require("child_process");
 
 // Whether to use binary transport.
 const USE_BINARY = os.platform() !== "win32";
@@ -33,7 +34,20 @@ function startServer() {
     var cols = parseInt(req.query.cols),
       rows = parseInt(req.query.rows),
       name = Math.random().toString(36).substring(7),
-      term = pty.spawn(process.platform === "win32" ? "cmd.exe" : "scala", [], {
+      opts = [
+        "run",
+        "-it",
+        "--rm",
+        "--name",
+        name,
+        "-u",
+        "sbtuser",
+        "-w",
+        "/home/sbtuser",
+        "hseeberger/scala-sbt:8u222_1.3.5_2.13.1",
+        "scala",
+      ],
+      term = pty.spawn("docker", opts, {
         name: "xterm-256color",
         cols: cols || 80,
         rows: rows || 24,
@@ -125,6 +139,11 @@ function startServer() {
     ws.on("close", function () {
       term.kill("SIGKILL");
       console.log("Closed terminal " + term.pid + " with name " + name);
+      exec("docker kill " + name, (err, stdout, stderr) => {
+        if (err) {
+          console.log("Failed to kill docker container " + name);
+        }
+      });
 
       // Clean things up
       delete terminals[term.pid];
