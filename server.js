@@ -13,7 +13,7 @@ const host = process.env.HOST || "0.0.0.0";
 const port = process.env.PORT || 3000;
 const maxTerminals = process.env.MAX_TERMINALS || 50;
 const maxIdleTime = process.env.MAX_IDLE_TIME || 600000; // 10 minutes
-const clearIdleTimer = process.env.CLEAR_IDLE_TIMER || 3600000; // 1 hour
+const clearIdleTimer = process.env.CLEAR_IDLE_TIMER || 600000; // 1 hour
 console.log("dockerRun = " + dockerRun);
 console.log("host = " + host);
 console.log("port = " + port);
@@ -122,11 +122,10 @@ function startServer() {
 
   app.post("/terminals/:pid/size", (req, res) => {
     var pid = parseInt(req.params.pid);
-    if (pid != "-1") {
+    if (pid != "-1" && terminals.hasOwnProperty(pid)) {
       var cols = parseInt(req.query.cols),
         rows = parseInt(req.query.rows),
         term = terminals[pid];
-      lastUpdates[term.pid] = Date.now();
       console.log("Resize to " + cols + ", " + rows);
       term.resize(cols, rows);
     }
@@ -135,15 +134,16 @@ function startServer() {
 
   app.ws("/terminals/:pid", function (ws, req) {
     var pid = parseInt(req.params.pid);
-    if (pid != "-1") {
+    if (pid != "-1" && terminals.hasOwnProperty(pid)) {
+      lastUpdates[pid] = Date.now();
       var term = terminals[parseInt(req.params.pid)];
       var name = names[parseInt(req.params.pid)];
-      lastUpdates[term.pid] = Date.now();
       console.log("Connected to terminal " + term.pid + " with name " + name);
       ws.send(logs[term.pid]);
       const send = USE_BINARY ? bufferUtf8(ws, 5) : buffer(ws, 5);
       term.on("data", function (data) {
         try {
+          lastUpdates[pid] = Date.now();
           send(data);
         } catch (ex) {
           // The WebSocket is not open, ignore
@@ -152,6 +152,7 @@ function startServer() {
       });
 
       ws.on("message", function (msg) {
+        lastUpdates[term.pid] = Date.now();
         term.write(msg);
       });
 
@@ -214,7 +215,7 @@ function bufferUtf8(socket, timeout) {
 
 function removeTerminal(term) {
   var pid = term.pid;
-  if (pid != "-1") {
+  if (pid != "-1" && terminals.hasOwnProperty(pid)) {
     var name = names[pid];
     term.kill("SIGKILL");
     console.log("Closed terminal " + pid + " with name " + name);
